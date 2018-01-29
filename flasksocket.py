@@ -8,9 +8,10 @@ sockets = Sockets(app)
 
 # 用户列表 1.名称 2.socket 3.游戏状态 4.gameindex 所在游戏局
 userlist=[]
-# 邀请列表数据 1.用户名称  2.用户index  3.b用户名称  4.b用户index  5.邀请状态 0：失败  1.a邀请b邀请中  2.成功
-
+# 邀请列表数据 1.用户名称  2.用户index  3.b用户名称  4.b用户index  5.邀请状态 0：失败  1.a邀请 b邀请中  2.成功
 invitelist=[]
+# 游戏列表 1.a用户 2.a用户ws 3.b用户 4.b用户ws  5.游戏状态
+gamelist=[]
 wslist=[]
 
 import message
@@ -73,16 +74,36 @@ def echo_socket(ws):
 @sockets.route('/invite')
 def echo_socket(ws):
     while not ws.closed:
-        # 保存websocket
-        msgsrv.invitesWslist.append(ws)
+
         # 接受邀请对象
-        message = ws.receive()
-        inviteobj=json.loads(message)
-        # 添加邀请列表
-        invitelist.append(inviteobj)
-        # 发送消息
-        # ws.send("邀请成功")
-        msgsrv.invite_message(inviteobj)
+        invitemessage = ws.receive()
+        # 转化msg对象
+        inviteobj = json.loads(invitemessage)
+        msgtype=inviteobj["type"]
+        # 如果是初始化
+        if msgtype == 'init':
+            # 保存websocket
+            msgsrv.invitesWslist.append(ws)
+        elif msgtype == 'sendinvite':
+            # 添加邀请列表
+            inviteitem=inviteobj["msgobj"]
+            invitelist.append(inviteitem)
+            # 发送消息
+            msgsrv.invite_message(inviteitem)
+        # 如果同意邀请
+        elif msgtype == 'agreeinvite':
+            inviteIndex =inviteobj["index"]
+            # 保存游戏对象
+            inviteobj = invitelist[inviteIndex]
+            inviteobj["status"]=2
+            gamelist.append(inviteobj)
+            # 发送成功对战消息
+            response={}
+            response["type"]="AGREE"
+            gameindex = len(gamelist)-1
+            inviteobj["gameindex"]=gameindex
+            response["data"]=inviteobj
+            msgsrv.agree_message(response)
 
 
 @app.route('/')

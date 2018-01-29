@@ -39,3 +39,18 @@ class MessageServer(object):
         except WebSocketError:
             self.observers.pop(self.observers.index(ws))
             print(ws, 'is closed')
+
+    def agree_message(self ,responseobj):
+        try:
+            inviteobj=responseobj["data"]
+            print(self.invitesWslist)
+            awsindex=inviteobj['aWsIndex']
+            print(awsindex)
+            aws = self.invitesWslist[awsindex]
+            aws.send(json.dumps(responseobj))
+            bwsindex=inviteobj['bWsIndex']
+            bws = self.invitesWslist[bwsindex]
+            bws.send(json.dumps(responseobj))
+        except WebSocketError:
+            # self.observers.pop(self.observers.index(ws))
+            print('is closed')
