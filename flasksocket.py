@@ -112,7 +112,7 @@ def echo_socket(ws):
             response["data"] = inviteitem
             msgsrv.agree_message(response)
 
-#  进行游戏
+#  进行游戏1
 @sockets.route('/game')
 def echo_socket(ws):
     while not ws.closed:
