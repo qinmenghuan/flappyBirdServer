@@ -1,7 +1,7 @@
 from geventwebsocket import WebSocketError
 import json
 
-class MessageServer(object):
+class GameServer(object):
 
     def __init__(self):
         # 邀请websocket集合
