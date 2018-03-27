@@ -91,7 +91,7 @@ def echo_socket(ws):
         elif msgtype == 'sendinvite':
             # 添加邀请列表
             inviteitem = inviteobj["msgobj"]
-            inviteitem["inviteIndex"]=len(invitelist)
+            inviteitem["inviteIndex"] = len(invitelist)
             invitelist.append(inviteitem)
             # 发送消息
             msgsrv.invite_message(inviteitem)
@@ -102,7 +102,7 @@ def echo_socket(ws):
             # 保存游戏对象 {}
             inviteitem = invitelist[inviteIndex]
             inviteitem["status"] = 2
-            invitelist[inviteIndex]=inviteitem
+            invitelist[inviteIndex] = inviteitem
             gamelist.append(inviteitem)
             # 发送成功对战消息
             response = {}
@@ -111,6 +111,7 @@ def echo_socket(ws):
             inviteitem["gameIndex"] = gameindex
             response["data"] = inviteitem
             msgsrv.agree_message(response)
+
 
 #  进行游戏1
 @sockets.route('/game')
@@ -126,27 +127,26 @@ def echo_socket(ws):
         if msgtype == 'init':
             username = receiveObj["username"]
             # 保存websocket
-            msgsrv.gameSocketDic[username]=ws
+            msgsrv.gameSocketDic[username] = ws
         # 游戏进行中
-        elif msgtype =='gaming':
+        elif msgtype == 'gaming':
             gameStepInfo = receiveObj["msgobj"]
-            opponentName=gameStepInfo["opponentName"]
-            opponentSocket=msgsrv.gameSocketDic[opponentName]
+            opponentName = gameStepInfo["opponentName"]
+            opponentSocket = msgsrv.gameSocketDic[opponentName]
             opponentSocket.send(json.dumps(receiveObj))
         # 游戏结束
-        elif msgtype=='GameOver':
+        elif msgtype == 'GameOver':
             # 跟对手发送消息
             gameStepInfo = receiveObj["msgobj"]
             opponentName = gameStepInfo["opponentName"]
             opponentSocket = msgsrv.gameSocketDic[opponentName]
-            #更新游戏数据
+            # 更新游戏数据
             gameIndex = gameStepInfo["gameIndex"]
-            gameInfo=gamelist[gameIndex]
-            gameInfo["status"]=gameStepInfo["gameStatus"]
-            gamelist[gameIndex]=gameInfo
+            gameInfo = gamelist[gameIndex]
+            gameInfo["status"] = gameStepInfo["gameStatus"]
+            gamelist[gameIndex] = gameInfo
             # 发socket
             opponentSocket.send(json.dumps(receiveObj))
-
 
 
 @app.route('/')
