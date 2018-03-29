@@ -1,9 +1,17 @@
-from flask import Flask
+'''
+    socket接口实例
+    create by qmh 2018-03-29
+'''
+
+
+from flask import Flask,Blueprint
 from flask_sockets import Sockets
 import json
 
-app = Flask(__name__)
-sockets = Sockets(app)
+wsapi = Blueprint(r'wsapi', __name__)
+
+# app = Flask(__name__)
+# sockets = Sockets(app)
 
 # 用户列表 1.名称 2.socket 3.游戏状态 4.gameindex 所在游戏局
 userlist = []
@@ -19,14 +27,14 @@ import message
 msgsrv = message.MessageServer()
 
 
-@sockets.route('/echo')
+@wsapi.route('/echo')
 def echo_socket(ws):
     while not ws.closed:
         message = ws.receive()
         ws.send(message)
 
 
-@sockets.route('/login')
+@wsapi.route('/login')
 def echo_socket(ws):
     while not ws.closed:
         wslist.append(ws)
@@ -39,7 +47,7 @@ def echo_socket(ws):
 
 
 # 登陆及返回
-@sockets.route('/gamelogin')
+@wsapi.route('/gamelogin')
 def echo_socket(ws):
     while not ws.closed:
         # 获取message
@@ -75,7 +83,7 @@ def echo_socket(ws):
 
 
 # 邀请参加
-@sockets.route('/invite')
+@wsapi.route('/invite')
 def echo_socket(ws):
     while not ws.closed:
 
@@ -114,7 +122,7 @@ def echo_socket(ws):
 
 
 #  进行游戏1
-@sockets.route('/game')
+@wsapi.route('/game')
 def echo_socket(ws):
     while not ws.closed:
         # 返回的消息
@@ -149,14 +157,3 @@ def echo_socket(ws):
             opponentSocket.send(json.dumps(receiveObj))
 
 
-@app.route('/')
-def hello():
-    return 'Hello World!'
-
-
-if __name__ == "__main__":
-    from gevent import pywsgi
-    from geventwebsocket.handler import WebSocketHandler
-
-    server = pywsgi.WSGIServer(('localhost', 9876), app, handler_class=WebSocketHandler)
-    server.serve_forever()
