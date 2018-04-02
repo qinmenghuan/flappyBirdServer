@@ -3,18 +3,18 @@
     create by qmh 2018-03-29
 '''
 
-
-from flask import Flask,Blueprint
-from flask_sockets import Sockets
+# 引用类库
+from flask import Flask, Blueprint
 import json
 
+# 引用sql类，工具
+import common.mysqldemo
+
+# 初始化sql操作类
+sqlutils = common.mysqldemo.MySQL_Utils()
 wsapi = Blueprint(r'wsapi', __name__)
 
-# app = Flask(__name__)
-# sockets = Sockets(app)
 
-# 用户列表 1.名称 2.socket 3.游戏状态 4.gameindex 所在游戏局
-userlist = []
 # 邀请列表数据 1.用户名称  2.用户index  3.b用户名称  4.b用户index  5.邀请状态 0：失败  1.a邀请 b邀请中  2.成功
 invitelist = []
 # 游戏列表 1.a用户 2.a用户ws 3.b用户 4.b用户ws  5.游戏状态  # 0 未开始  1 游戏中  2 游戏结束,a方胜 3.游戏结束，b方胜
@@ -22,9 +22,13 @@ gamelist = []
 
 wslist = []
 
+# 引用类
 import message
+import socketapi.user_server
 
+# 实力化
 msgsrv = message.MessageServer()
+user_server_obj = socketapi.user_server.UserServer()
 
 
 @wsapi.route('/echo')
@@ -34,52 +38,55 @@ def echo_socket(ws):
         ws.send(message)
 
 
+# 最新登录及放回用户列表
 @wsapi.route('/login')
-def echo_socket(ws):
-    while not ws.closed:
-        wslist.append(ws)
-        message = ws.receive()
+def login_socket(web_socket):
+    while not web_socket.closed:
+        # wslist.append(ws)
+        receive_msg = web_socket.receive()
         # userlist插入用户列表
-        msgObj = json.loads(message)
-        userlist.append(msgObj['user'])
-        # print(userlist)
-        ws.send(json.dumps(userlist))
-
-
-# 登陆及返回
-@wsapi.route('/gamelogin')
-def echo_socket(ws):
-    while not ws.closed:
-        # 获取message
-        message = ws.receive()
-        if message is None:
+        if not receive_msg:
             return
-        if message == "Search":
-            # 保存websocket
-            msgsrv.observers.append(ws)
-            # 返回全部用户列表
-            liststring = json.dumps(userlist)
-            msgsrv.add_message(liststring)
-        else:
-            # userlist插入用户列表
-            msgObj = json.loads(message)
-            username = msgObj['user']
-            # 定义用户对象
-            userDic = {}
-            userDic['username'] = username
-            userDic['wsindex'] = len(msgsrv.observers)
-            userDic['gameindex'] = -1
-            # 0 未开始  1 邀请中  2游戏中  3 游戏结束
-            userDic['gamestatus'] = 0
-            # 插入用户列表
-            userlist.append(userDic)
-            # 返回当前用户
-            userDicStr = json.dumps(userDic)
-            # 返回当前登陆人
-            ws.send(userDicStr)
-            # 通知其他玩家上线啦
-            userliststr = json.dumps(userlist)
-            msgsrv.add_message(userliststr)
+        receive_msg_dic = json.loads(receive_msg)
+        socket_type = receive_msg_dic["type"]
+        if socket_type == "Login":
+            login_user = receive_msg_dic["data"]
+            # 1 数据库查询是否存在该用户
+            user_telephone = login_user['telephone']
+            sqlstr = 'SELECT * FROM xfz_user WHERE telephone ={0} AND pwd = {1}'.format(user_telephone, login_user['pwd'])
+            count = sqlutils.exec_sql(sqlstr)
+            #  如果查不到该用户
+            if not count :
+                response_dic = {"type": "Login", "response_code": "300", "response_msg": "账号或密码不正确",
+                                "response_data": {}}
+                web_socket.send(json.dumps(response_dic))
+
+            # 存在该用户
+            else:
+                #  2 缓存用户，判断是否存在  ，存在即更新
+                # 如果存在该登录用户，则先下线该用户
+                if user_telephone in user_server_obj.user_socket_dic:
+                    user_socket = user_server_obj.user_socket_dic[user_telephone]
+                    response_dic = {"type": "Login", "response_code": "301", "response_msg": "账号在另外台设备登录",
+                                    "response_data": {}}
+                    user_socket.send(json.dumps(response_dic))
+
+                # 3 保存websocket
+                user_server_obj.user_socket_dic[user_telephone] = web_socket
+
+                # 4 保存用户列表
+                login_user_dic = {}
+                login_user_dic['telephone'] = user_telephone
+                login_user_dic['gameid'] = -1
+                # 0 未开始  1 邀请中  2游戏中  3 游戏结束
+                login_user_dic['user_status'] = 0
+                user_server_obj.user_list_dic[user_telephone]=login_user_dic
+
+                # 5 发送成功消息,向所有用户发送用户列表消息
+                user_server_obj.send_all_users()
+        elif socket_type == "Search":
+            # 5 发送成功消息,向所有用户发送用户列表消息
+            user_server_obj.send_all_users()
 
 
 # 邀请参加
@@ -155,5 +162,3 @@ def echo_socket(ws):
             gamelist[gameIndex] = gameInfo
             # 发socket
             opponentSocket.send(json.dumps(receiveObj))
-
-

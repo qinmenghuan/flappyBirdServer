@@ -45,7 +45,7 @@ class GameServer(object):
             bws.send(json.dumps(bResponse))
         except WebSocketError:
             self.observers.pop(self.observers.index(ws))
-            print(ws, 'is closed')
+            # print(ws, 'is closed')
 
     def agree_message(self ,responseobj):
         try:

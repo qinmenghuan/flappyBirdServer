@@ -11,6 +11,7 @@ import common.mysqldemo
 from restapi.utils import json_response, JSON_MIME_TYPE,RESPONSE_CODE
 
 userapi = Blueprint(r'userapi', __name__)
+# 初始化sql操作类
 sqlutils=common.mysqldemo.MySQL_Utils()
 
 @userapi.route('/')
