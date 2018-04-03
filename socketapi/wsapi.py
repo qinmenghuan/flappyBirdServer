@@ -6,30 +6,26 @@
 # 引用类库
 from flask import Flask, Blueprint
 import json
+import datetime
 
 # 引用sql类，工具
 import common.mysqldemo
+import message
+import socketapi.user_server
+import socketapi.invite_server
 
-# 初始化sql操作类
+# 实例化sql操作类
 sqlutils = common.mysqldemo.MySQL_Utils()
 wsapi = Blueprint(r'wsapi', __name__)
-
+msgsrv = message.MessageServer()
+user_server_obj = socketapi.user_server.UserServer()
+invite_server_obj=socketapi.invite_server.InviteServer()
 
 # 邀请列表数据 1.用户名称  2.用户index  3.b用户名称  4.b用户index  5.邀请状态 0：失败  1.a邀请 b邀请中  2.成功
 invitelist = []
 # 游戏列表 1.a用户 2.a用户ws 3.b用户 4.b用户ws  5.游戏状态  # 0 未开始  1 游戏中  2 游戏结束,a方胜 3.游戏结束，b方胜
 gamelist = []
-
 wslist = []
-
-# 引用类
-import message
-import socketapi.user_server
-
-# 实力化
-msgsrv = message.MessageServer()
-user_server_obj = socketapi.user_server.UserServer()
-
 
 @wsapi.route('/echo')
 def echo_socket(ws):
@@ -42,7 +38,6 @@ def echo_socket(ws):
 @wsapi.route('/login')
 def login_socket(web_socket):
     while not web_socket.closed:
-        # wslist.append(ws)
         receive_msg = web_socket.receive()
         # userlist插入用户列表
         if not receive_msg:
@@ -88,6 +83,62 @@ def login_socket(web_socket):
             # 5 发送成功消息,向所有用户发送用户列表消息
             user_server_obj.send_all_users()
 
+# 游戏邀请
+@wsapi.route('/gameinvite')
+def invite_socket(web_socket):
+    while not web_socket.closed:
+        receive_msg = web_socket.receive()
+        # userlist插入用户列表
+        if not receive_msg:
+            return
+        receive_msg_dic = json.loads(receive_msg)
+        socket_type = receive_msg_dic["type"]
+        receive_data = receive_msg_dic["data"]
+        aTelephone = receive_data["aTelephone"]
+        bTelephone = receive_data["bTelephone"]
+
+        # 初始化
+        if socket_type =="Init":
+            telephone=receive_data["telephone"]
+            invite_server_obj.invite_socket_dic[telephone]=web_socket
+
+        # 发送邀请
+        elif socket_type=="Invite":
+            # 判断是否已经发邀请
+            if aTelephone in invite_server_obj.invite_dic:
+                response_dic = {"type": "Invite", "response_code": "300", "response_msg": "同一时间只能邀请一位","response_data": {}}
+                web_socket.send(json.dumps(response_dic))
+
+            # 判断已经被邀请
+            if bTelephone in invite_server_obj.invite_dic:
+                response_dic = {"type": "Invite", "response_code": "300", "response_msg": "该用户已被邀请","response_data": {}}
+                web_socket.send(json.dumps(response_dic))
+
+            # 插入邀请人信息
+            invite_server_obj.invite_dic[aTelephone]=receive_data
+            # 插入被邀请人信息
+            invite_server_obj.invite_dic[bTelephone] = receive_data
+            # 发送双方消息
+            invite_server_obj.invite_message(receive_data)
+
+        # 同意邀请
+        elif socket_type=="Agree":
+            # 用户状态
+            user_server_obj.user_list_dic[aTelephone]["user_status"] = 2
+            user_server_obj.user_list_dic[bTelephone]["user_status"] = 2
+
+            # 保存游戏
+            nowdt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            insertStr = 'INSERT INTO xfz_game (a_telephone, b_telephone,game_status,create_time,update_time) VALUES ({0},{1},{2},{3},{4})'.format(aTelephone, bTelephone,2,nowdt,nowdt)
+            sqlutils.exec_txsql(insertStr)
+
+            # 发送双方消息
+            invite_server_obj.agree_message(receive_data)
+
+        # 拒绝邀请
+        # elif socket_type
+
+
 
 # 邀请参加
 @wsapi.route('/invite')
@@ -110,6 +161,7 @@ def echo_socket(ws):
             invitelist.append(inviteitem)
             # 发送消息
             msgsrv.invite_message(inviteitem)
+
         # 如果同意邀请
         elif msgtype == 'agreeinvite':
             inviteitem = inviteobj["msgobj"]
