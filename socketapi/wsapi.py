@@ -53,7 +53,7 @@ def login_socket(web_socket):
             #  如果查不到该用户
             if not count :
                 response_dic = {"type": "Login", "response_code": "300", "response_msg": "账号或密码不正确",
-                                "response_data": {}}
+                                "data": {}}
                 web_socket.send(json.dumps(response_dic))
 
             # 存在该用户
@@ -63,7 +63,7 @@ def login_socket(web_socket):
                 if user_telephone in user_server_obj.user_socket_dic:
                     user_socket = user_server_obj.user_socket_dic[user_telephone]
                     response_dic = {"type": "Login", "response_code": "301", "response_msg": "账号在另外台设备登录",
-                                    "response_data": {}}
+                                    "data": {}}
                     user_socket.send(json.dumps(response_dic))
 
                 # 3 保存websocket
@@ -94,8 +94,6 @@ def invite_socket(web_socket):
         receive_msg_dic = json.loads(receive_msg)
         socket_type = receive_msg_dic["type"]
         receive_data = receive_msg_dic["data"]
-        aTelephone = receive_data["aTelephone"]
-        bTelephone = receive_data["bTelephone"]
 
         # 初始化
         if socket_type =="Init":
@@ -104,14 +102,16 @@ def invite_socket(web_socket):
 
         # 发送邀请
         elif socket_type=="Invite":
+            aTelephone = receive_data["aTelephone"]
+            bTelephone = receive_data["bTelephone"]
             # 判断是否已经发邀请
             if aTelephone in invite_server_obj.invite_dic:
-                response_dic = {"type": "Invite", "response_code": "300", "response_msg": "同一时间只能邀请一位","response_data": {}}
+                response_dic = {"type": "Invite", "response_code": "300", "response_msg": "同一时间只能邀请一位","data": {}}
                 web_socket.send(json.dumps(response_dic))
 
             # 判断已经被邀请
             if bTelephone in invite_server_obj.invite_dic:
-                response_dic = {"type": "Invite", "response_code": "300", "response_msg": "该用户已被邀请","response_data": {}}
+                response_dic = {"type": "Invite", "response_code": "300", "response_msg": "该用户已被邀请","data": {}}
                 web_socket.send(json.dumps(response_dic))
 
             # 插入邀请人信息
@@ -123,6 +123,8 @@ def invite_socket(web_socket):
 
         # 同意邀请
         elif socket_type=="Agree":
+            aTelephone = receive_data["aTelephone"]
+            bTelephone = receive_data["bTelephone"]
             # 用户状态
             user_server_obj.user_list_dic[aTelephone]["user_status"] = 2
             user_server_obj.user_list_dic[bTelephone]["user_status"] = 2

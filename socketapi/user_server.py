@@ -30,7 +30,7 @@ class UserServer(object):
         for key in list(self.user_list_dic.keys()):
             try:
                 response_dic = {"type": "Search", "response_code": "200", "response_msg": "",
-                                "response_data": user_list }
+                                "data": user_list }
                 self.user_socket_dic[key].send(json.dumps(response_dic))
             except WebSocketError:
                 # self.observers.pop(self.observers.index(ws))

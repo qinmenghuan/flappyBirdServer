@@ -30,7 +30,7 @@ class InviteServer(object):
             aResponse = {"type": "Invite", "response_code": "200"}
             aSocket.send(json.dumps(aResponse))
             # 被邀请者返回消息
-            bResponse = {"type": "beInvited", "response_code": "200", "response_data": receive_data}
+            bResponse = {"type": "beInvited", "response_code": "200", "data": receive_data}
             bSocket.send(json.dumps(bResponse))
         except WebSocketError:
             # self.observers.pop(self.observers.index(ws))
@@ -41,7 +41,7 @@ class InviteServer(object):
         try:
             aTelephone = receive_data["aTelephone"]
             bTelephone = receive_data["bTelephone"]
-            response = {"type": "Agree", "response_code": "200", "response_data": receive_data}
+            response = {"type": "Agree", "response_code": "200", "data": receive_data}
 
             # 邀请人返回消息
             aSocket = self.invite_socket_dic[aTelephone]
