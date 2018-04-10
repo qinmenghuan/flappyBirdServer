@@ -21,11 +21,8 @@ msgsrv = message.MessageServer()
 user_server_obj = socketapi.user_server.UserServer()
 invite_server_obj=socketapi.invite_server.InviteServer()
 
-# 邀请列表数据 1.用户名称  2.用户index  3.b用户名称  4.b用户index  5.邀请状态 0：失败  1.a邀请 b邀请中  2.成功
-invitelist = []
 # 游戏列表 1.a用户 2.a用户ws 3.b用户 4.b用户ws  5.游戏状态  # 0 未开始  1 游戏中  2 游戏结束,a方胜 3.游戏结束，b方胜
 gamelist = []
-wslist = []
 
 @wsapi.route('/echo')
 def echo_socket(ws):
@@ -131,55 +128,23 @@ def invite_socket(web_socket):
 
             # 保存游戏
             nowdt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            insertStr = 'INSERT INTO xfz_game (a_telephone, b_telephone,game_status,create_time,update_time) VALUES ({0},{1},{2},{3},{4})'.format(aTelephone, bTelephone,2,nowdt,nowdt)
+            # insertStr = 'INSERT INTO xfz_game (a_telephone, b_telephone,game_status,create_time,update_time) VALUES ({0},{1},{2},{3},{4})'.format(aTelephone, bTelephone,2,nowdt,nowdt)
+            insertStr = 'INSERT INTO xfz_game (a_telephone, b_telephone,game_status) VALUES ({0},{1},{2})'.format(aTelephone, bTelephone,2)
             sqlutils.exec_txsql(insertStr)
 
             # 发送双方消息
             invite_server_obj.agree_message(receive_data)
 
         # 拒绝邀请
-        # elif socket_type
+        elif socket_type=="Refuse":
+            # 1 清空邀请消息
+            aTelephone = receive_data["aTelephone"]
+            bTelephone = receive_data["bTelephone"]
+            invite_server_obj.invite_dic.pop(aTelephone)
+            invite_server_obj.invite_dic.pop(bTelephone)
 
-
-
-# 邀请参加
-@wsapi.route('/invite')
-def echo_socket(ws):
-    while not ws.closed:
-
-        # 接受邀请对象
-        invitemessage = ws.receive()
-        # 转化msg对象
-        inviteobj = json.loads(invitemessage)
-        msgtype = inviteobj["type"]
-        # 如果是初始化
-        if msgtype == 'init':
-            # 保存websocket
-            msgsrv.invitesWslist.append(ws)
-        elif msgtype == 'sendinvite':
-            # 添加邀请列表
-            inviteitem = inviteobj["msgobj"]
-            inviteitem["inviteIndex"] = len(invitelist)
-            invitelist.append(inviteitem)
-            # 发送消息
-            msgsrv.invite_message(inviteitem)
-
-        # 如果同意邀请
-        elif msgtype == 'agreeinvite':
-            inviteitem = inviteobj["msgobj"]
-            inviteIndex = inviteitem["inviteIndex"]
-            # 保存游戏对象 {}
-            inviteitem = invitelist[inviteIndex]
-            inviteitem["status"] = 2
-            invitelist[inviteIndex] = inviteitem
-            gamelist.append(inviteitem)
-            # 发送成功对战消息
-            response = {}
-            response["type"] = "AGREE"
-            gameindex = len(gamelist) - 1
-            inviteitem["gameIndex"] = gameindex
-            response["data"] = inviteitem
-            msgsrv.agree_message(response)
+            # 2 发送邀请者消息
+            invite_server_obj.refuse_message(receive_data)
 
 
 #  进行游戏1

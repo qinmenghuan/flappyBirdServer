@@ -37,6 +37,7 @@ class InviteServer(object):
             print(aSocket, 'is closed')
             print(bSocket, 'is closed')
 
+    # 同意邀请
     def agree_message(self, receive_data):
         try:
             aTelephone = receive_data["aTelephone"]
@@ -53,4 +54,18 @@ class InviteServer(object):
 
         except WebSocketError:
             # self.observers.pop(self.observers.index(ws))
+            print('is closed')
+
+    # 拒绝邀请
+    def refuse_message(self, receive_data):
+        try:
+            aTelephone = receive_data["aTelephone"]
+            response = {"type": "Refuse", "response_code": "300", "response_msg": "邀请被拒绝！"}
+
+            # 邀请人返回消息
+            aSocket = self.invite_socket_dic[aTelephone]
+            aSocket.send(json.dumps(response))
+
+        except WebSocketError:
+            self.invite_socket_dic.pop(aTelephone)
             print('is closed')
