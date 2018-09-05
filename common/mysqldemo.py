@@ -1,3 +1,5 @@
+# coding:utf-8
+
 '''
     数据库操作类
     create by qmh 2018-03-23
@@ -5,13 +7,22 @@
 
 import pymysql
 
-# 全局变量
+# 全局变量- 本地数据库
+# CONNECT_TIMEOUT=100
+# IP='localhost'
+# PORT=3306
+# USER='root'
+# PASSWORD='root'
+# DBNAME="qmh"
+
+# 全局变量- 服务器数据库
 CONNECT_TIMEOUT=100
-IP='localhost'
+IP='47.98.129.66'
 PORT=3306
 USER='root'
-PASSWORD='root'
+PASSWORD='Qin774658293+'
 DBNAME="qmh"
+
 
 # 异常处理
 class QueryException (Exception):

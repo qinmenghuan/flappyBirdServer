@@ -1,3 +1,5 @@
+# coding:utf-8
+
 '''
     socket接口实例
     create by qmh 2018-03-29
@@ -24,7 +26,7 @@ invite_server_obj=socketapi.invite_server.InviteServer()
 # 游戏列表 1.a用户 2.a用户ws 3.b用户 4.b用户ws  5.游戏状态  # 0 未开始  1 游戏中  2 游戏结束,a方胜 3.游戏结束，b方胜
 gamelist = []
 
-@wsapi.route('/echo')
+@wsapi.route('/')
 def echo_socket(ws):
     while not ws.closed:
         message = ws.receive()

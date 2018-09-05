@@ -1,3 +1,5 @@
+# coding:utf-8
+
 '''
     http返回数据处理工具
     create by qmh 2018-03-24

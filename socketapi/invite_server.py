@@ -1,3 +1,5 @@
+# coding:utf-8
+
 '''
     邀请处理类
     create by qmh 2018-03-29
