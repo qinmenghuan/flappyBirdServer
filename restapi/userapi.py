@@ -16,22 +16,8 @@ userapi = Blueprint(r'userapi', __name__)
 # 初始化sql操作类
 sqlutils=common.mysqldemo.MySQL_Utils()
 
-
-a=10
-b=20
-
-def fun(a,b):
-    print("func_in",id(a),id(b))
-    a=5
-    print("new_in",id(a),id(b))
-    c=a+b
-    return  c
-
 @userapi.route('/')
 def hello():
-    print("func_out",id(a),id(b))
-    print(fun(2,3))
-
     return 'Hello World1234!!!'
 
 @userapi.route('/hello')
