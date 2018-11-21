@@ -1,3 +1,6 @@
+# coding:utf-8
+
+
 '''
     启动文件
     create by qmh 2018-03-27
@@ -22,9 +25,9 @@ sockets = Sockets(app)
 sockets.register_blueprint(wsapi)
 
 
-# 启动主程序
+#   启动主程序
 if __name__ =="__main__":
     from gevent import pywsgi
     from geventwebsocket.handler import WebSocketHandler
-    server = pywsgi.WSGIServer(('', 8003), app, handler_class=WebSocketHandler)
+    server = pywsgi.WSGIServer(('', 8000), app, handler_class=WebSocketHandler)
     server.serve_forever()
