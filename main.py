@@ -14,6 +14,7 @@ from flask_sockets import Sockets
 from socketapi.wsapi import wsapi
 from restapi.userapi import userapi
 from restapi.taskapi import taskapi
+import logging
 
 app=Flask(__name__)
 # 注册restapi 同一route先注册优先
@@ -30,4 +31,7 @@ if __name__ =="__main__":
     from gevent import pywsgi
     from geventwebsocket.handler import WebSocketHandler
     server = pywsgi.WSGIServer(('', 8000), app, handler_class=WebSocketHandler)
+    # 日志打印配置
+    logHandler = logging.FileHandler('restapi.log')
+    app.logger.addHandler(logHandler)
     server.serve_forever()

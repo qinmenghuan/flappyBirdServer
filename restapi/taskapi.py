@@ -15,8 +15,10 @@ import datetime
 import urllib.request
 import urllib.parse
 import os
+import logging
 
 taskapi = Blueprint(r'taskapi', __name__)
+
 # 初始化sql操作类
 sqlutils = common.mysqldemo.MySQL_Utils()
 
@@ -75,7 +77,7 @@ def get_tasklist():
             searchDate = time.strftime('%Y-%m-%d', time.localtime())
 
         # 拼接执行sql  s.starttime,s.endtime,
-        sqlstr = "SELECT t.id,t.taskid,s.taskname,DATE_FORMAT(s.starttime,'%H:%i:%s') AS starttime,DATE_FORMAT(s.endtime,'%H:%i:%s') AS endtime,t.taskStatus FROM xfz_dailytask AS t " \
+        sqlstr = "SELECT t.id,t.taskid,s.taskname,s.weekindex,DATE_FORMAT(s.starttime,'%H:%i:%s') AS starttime,DATE_FORMAT(s.endtime,'%H:%i:%s') AS endtime,t.taskStatus FROM xfz_dailytask AS t " \
                  "LEFT JOIN xfz_taskrule AS s ON t.taskid=s.taskid " \
                  "WHERE t.userid={0} AND DATE_FORMAT(t.create_time,'%Y-%m-%d')='{1}' AND t.isdeleted=0 " \
         "ORDER BY t.taskStatus,DATE_FORMAT(s.starttime,'%H:%i:%s') ".format(userid, searchDate)
@@ -130,10 +132,11 @@ def createTask():
         #     return json_response(error, 200)
 
         nowdt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        nowdateStr = datetime.datetime.now().strftime("%Y-%m-%d ")
 
         insertStr = "INSERT INTO xfz_taskrule (taskname, starttime,endtime,weekindex,repeattype,wechat_open_id,userid,createtime,updatetime,isdeleted) " \
                     "VALUES ('{0}','{1}','{2}','{3}',{4},'{5}',{6},'{7}','{8}',{9})". \
-            format(requestdata['taskname'], requestdata['starttime'], requestdata['endtime'], requestdata['weekindex'],
+            format(requestdata['taskname'], nowdateStr+requestdata['starttime'],nowdateStr+ requestdata['endtime'], requestdata['weekindex'],
                    requestdata['repeattype'],
                    requestdata['wechat_open_id'], requestdata['userid'], nowdt, nowdt, 0)
         count = sqlutils.exec_txsql(insertStr)
@@ -142,6 +145,28 @@ def createTask():
     except:
         return json_response(error, 500)
 
+# 新建任务规则
+@taskapi.route('/updateTask', methods=['POST'])
+def updateTask():
+    try:
+        # 校验请求header
+        if request.content_type != JSON_MIME_TYPE:
+            error = json.dumps({'errorMsg': '无效Content Type'})
+            return json_response(error, 400)
+
+        requestdata = request.json
+
+        nowdt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        nowdateStr = datetime.datetime.now().strftime("%Y-%m-%d ")
+
+        insertStr = "UPDATE xfz_taskrule SET taskname='{1}',starttime='{2}',endtime='{3}',weekindex='{4}', updatetime='{5}' WHERE taskid={0}". \
+            format(requestdata['taskid'],requestdata['taskname'], nowdateStr+requestdata['starttime'],nowdateStr+ requestdata['endtime'], requestdata['weekindex'],nowdt)
+
+        count = sqlutils.exec_txsql(insertStr)
+        success = json.dumps({RESPONSE_CODE: 200})
+        return json_response(success)
+    except:
+        return json_response(error, 500)
 
 # 根据opencode 返回openid，如果没有openid存储openid
 @taskapi.route('/getOpenid', methods=['GET'])
